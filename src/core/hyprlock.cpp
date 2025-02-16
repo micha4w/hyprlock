@@ -543,10 +543,11 @@ bool CHyprlock::isUnlocked() {
 }
 
 void CHyprlock::clearPasswordBuffer() {
-    if (m_sPasswordState.passBuffer.empty())
+    if (!m_sPasswordState.dirty || m_sPasswordState.passBuffer.empty())
         return;
 
     m_sPasswordState.passBuffer = "";
+    m_sPasswordState.dirty = false;
 
     renderAllOutputs();
 }
@@ -629,12 +630,17 @@ void CHyprlock::onKey(uint32_t key, bool down) {
         }
     }
 
-    if (g_pAuth->checkWaiting()) {
-        renderAllOutputs();
-        return;
-    }
+    // if (g_pAuth->checkWaiting()) {
+    //     renderAllOutputs();
+    //     return;
+    // }
 
     if (down) {
+        if (m_sPasswordState.dirty) {
+            m_sPasswordState.dirty = false;
+            m_sPasswordState.passBuffer = "";
+        }
+
         m_bCapsLock = xkb_state_mod_name_is_active(g_pSeatManager->m_pXKBState, XKB_MOD_NAME_CAPS, XKB_STATE_MODS_LOCKED);
         m_bNumLock  = xkb_state_mod_name_is_active(g_pSeatManager->m_pXKBState, XKB_MOD_NAME_NUM, XKB_STATE_MODS_LOCKED);
         m_bCtrl     = xkb_state_mod_name_is_active(g_pSeatManager->m_pXKBState, XKB_MOD_NAME_CTRL, XKB_STATE_MODS_EFFECTIVE);
@@ -676,6 +682,7 @@ void CHyprlock::handleKeySym(xkb_keysym_t sym, bool composed) {
         }
 
         g_pAuth->submitInput(m_sPasswordState.passBuffer);
+        m_sPasswordState.dirty = true;
     } else if (SYM == XKB_KEY_BackSpace || SYM == XKB_KEY_Delete) {
         if (m_sPasswordState.passBuffer.length() > 0) {
             // handle utf-8

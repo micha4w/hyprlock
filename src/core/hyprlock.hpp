@@ -143,6 +143,7 @@ class CHyprlock {
         std::string passBuffer      = "";
         size_t      failedAttempts  = 0;
         bool        displayFailText = false;
+        bool        dirty           = false;
     } m_sPasswordState;
 
     struct {
